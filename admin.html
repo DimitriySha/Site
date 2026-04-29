@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="refresh" content="0;url=admin/dashboard.html">
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to admin dashboard...</p>
+    <script>
+        if (localStorage.getItem('user')) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user.role === 'admin') {
+                window.location.href = 'admin/dashboard.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        } else {
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

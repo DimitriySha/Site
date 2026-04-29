@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Uyut</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="index.html">Uyut<span>.</span></a>
+                </div>
+                <nav id="main-nav"></nav>
+                <div class="header-actions" id="header-actions"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Admin Dashboard</h1>
+                <p>Manage your rental business</p>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value" id="total-apartments">0</div>
+                    <div class="label">Apartments</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="total-bookings">0</div>
+                    <div class="label">Total Bookings</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="pending-bookings">0</div>
+                    <div class="label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="active-users">0</div>
+                    <div class="label">Users</div>
+                </div>
+            </div>
+
+            <div class="dashboard-tabs">
+                <button class="tab-btn active" data-tab="apartments">Apartments</button>
+                <button class="tab-btn" data-tab="bookings">Recent Bookings</button>
+                <button class="tab-btn" data-tab="users">Users</button>
+            </div>
+
+            <!-- Apartments Tab -->
+            <div id="apartments-tab" class="tab-content active">
+                <div class="flex-between mb-20">
+                    <h2>All Apartments</h2>
+                    <button class="btn btn-primary" onclick="showAddApartmentModal()">
+                        <i class="fas fa-plus"></i> Add Apartment
+                    </button>
+                </div>
+                <div id="apartments-table">
+                    <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+
+            <!-- Bookings Tab -->
+            <div id="bookings-tab" class="tab-content">
+                <h2>All Bookings</h2>
+                <div id="bookings-table"></div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="users-tab" class="tab-content">
+                <h2>Registered Users</h2>
+                <div id="users-table"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Apartment Modal -->
+    <div class="modal" id="apartment-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Apartment</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="apartment-form">
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" name="title" id="apt-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" id="apt-description" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Address *</label>
+                        <input type="text" name="address" id="apt-address" required>
+                    </div>
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" name="city" id="apt-city" value="Astana">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price per Night (₸) *</label>
+                        <input type="number" name="price_per_night" id="apt-price" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Guests *</label>
+                        <input type="number" name="guests" id="apt-guests" required min="1" value="2">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Bedrooms</label>
+                        <input type="number" name="bedrooms" id="apt-bedrooms" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Beds</label>
+                        <input type="number" name="beds" id="apt-beds" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Bathrooms</label>
+                        <input type="number" name="bathrooms" id="apt-bathrooms" min="1" value="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Amenities (comma-separated)</label>
+                    <input type="text" name="amenities" id="apt-amenities" placeholder="wifi, kitchen, parking, ac">
+                </div>
+                <div class="form-group">
+                    <label>Coordinates</label>
+                    <div class="form-row">
+                        <input type="number" step="0.0001" name="latitude" id="apt-lat" placeholder="Latitude" value="51.1694">
+                        <input type="number" step="0.0001" name="longitude" id="apt-lng" placeholder="Longitude" value="71.4131">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="is_available" id="apt-status">
+                        <option value="1">Available</option>
+                        <option value="0">Unavailable</option>
+                    </select>
+                </div>
+                <div class="flex-between">
+                    <span id="form-error" class="error-message hidden"></span>
+                    <div>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <button class="modal-close" onclick="closeConfirmModal()">&times;</button>
+            </div>
+            <p>Are you sure you want to delete this item? This action cannot be undone.</p>
+            <div class="flex-between mt-20">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let apartments = [];
+        let bookings = [];
+        let users = [];
+        let currentEditId = null;
+        let deleteTarget = null;
+        let deleteType = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            initializeAuth();
+            checkAdminAccess();
+
+            // Load all data
+            await loadAnalytics();
+            await loadApartments();
+            await loadAllBookings();
+            await loadUsers();
+
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    document.getElementById(this.dataset.tab + '-tab').classList.add('active');
+                });
+            });
+
+            // Form submission
+            document.getElementById('apartment-form').addEventListener('submit', handleFormSubmit);
+        });
+
+        async function checkAdminAccess() {
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user || user.role !== 'admin') {
+                alert('Access denied. Admins only.');
+                window.location.href = 'index.html';
+            }
+        }
+
+        async function loadAnalytics() {
+            try {
+                // Simple stats from apartments and bookings APIs
+                document.getElementById('total-apartments').textContent = apartments.length;
+
+                document.getElementById('total-bookings').textContent = bookings.length;
+                document.getElementById('pending-bookings').textContent = bookings.filter(b => b.status === 'pending').length;
+                document.getElementById('active-users').textContent = users.length;
+            } catch (error) {
+                console.error('Analytics error:', error);
+            }
+        }
+
+        async function loadApartments() {
+            try {
+                const response = await fetch('api/apartments.php');
+                const data = await response.json();
+                if (data.success) {
+                    apartments = data.apartments;
+                    renderTable('apartments-table', apartments, renderApartmentRow);
+                }
+            } catch (error) {
+                showTableError('apartments-table', 'Failed to load apartments');
+            }
+        }
+
+        function renderApartmentRow(apt) {
+            return `
+                <tr>
+                    <td>${apt.id}</td>
+                    <td>
+                        <a href="../apartment.html?id=${apt.id}" target="_blank">${apt.title}</a>
+                    </td>
+                    <td>₸${Number(apt.price_per_night).toLocaleString()}</td>
+                    <td>${apt.guests}</td>
+                    <td>
+                        <span class="status-badge ${apt.is_available ? 'status-confirmed' : 'status-cancelled'}">
+                            ${apt.is_available ? 'Available' : 'Unavailable'}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <button class="btn btn-secondary btn-sm" onclick="editApartment(${apt.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteApartment(${apt.id}, 'apartment')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        async function loadAllBookings() {
+            try {
+                const response = await fetch('api/bookings.php');
+                const data = await response.json();
+                if (data.success) {
+                    bookings = data.bookings;
+                    renderTable('bookings-table', bookings, renderBookingRow);
+                }
+            } catch (error) {
+                showTableError('bookings-table', 'Failed to load bookings');
+            }
+        }
+
+        function renderBookingRow(b) {
+            return `
+                <tr>
+                    <td>${b.id}</td>
+                    <td><a href="../apartment.html?id=${b.apartment_id}" target="_blank">${b.apartment_title}</a></td>
+                    <td>User #${b.user_id}</td>
+                    <td>${b.check_in} → ${b.check_out}</td>
+                    <td>₸${Number(b.total_price).toLocaleString()}</td>
+                    <td>
+                        <select onchange="updateBookingStatus(${b.id}, this.value)"
+                                style="padding: 5px; border-radius: 4px; border: 1px solid #ddd;">
+                            <option value="pending" ${b.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="confirmed" ${b.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                            <option value="completed" ${b.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            <option value="cancelled" ${b.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </td>
+                </tr>
+            `;
+        }
+
+        async function updateBookingStatus(id, status) {
+            try {
+                const response = await fetch('api/admin.php', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, status })
+                });
+                const data = await response.json();
+                if (!data.success) alert(data.error || 'Failed to update');
+            } catch (error) {
+                alert('Server error');
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                // Would need separate endpoint, for now show placeholder
+                // Placeholder until API is complete
+                showTableError('users-table', 'User management coming soon');
+            } catch (error) {
+                console.error('Users error:', error);
+            }
+        }
+
+        function renderTable(containerId, data, rowRenderer) {
+            const container = document.getElementById(containerId);
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p style="padding: 20px; color: var(--gray);">No items found</p>';
+                return;
+            }
+
+            const headers = getHeadersForType(containerId);
+            container.innerHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(rowRenderer).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function getHeadersForType(type) {
+            switch(type) {
+                case 'apartments-table': return ['ID', 'Title', 'Price', 'Guests', 'Status', 'Actions'];
+                case 'bookings-table': return ['ID', 'Apartment', 'Guest', 'Dates', 'Total', 'Status'];
+                case 'users-table': return ['ID', 'Email', 'Name', 'Phone', 'Joined'];
+                default: return [];
+            }
+        }
+
+        function showTableError(containerId, message) {
+            document.getElementById(containerId).innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle fa-3x" style="margin-bottom: 15px; color: var(--danger);"></i>
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function showAddApartmentModal() {
+            currentEditId = null;
+            document.getElementById('modal-title').textContent = 'Add Apartment';
+            document.getElementById('apartment-form').reset();
+            document.getElementById('form-error').classList.add('hidden');
+            document.getElementById('apartment-modal').classList.add('active');
+        }
+
+        function editApartment(id) {
+            currentEditId = id;
+            const apt = apartments.find(a => a.id === id);
+            if (!apt) return;
+
+            document.getElementById('modal-title').textContent = 'Edit Apartment';
+            document.getElementById('apt-title').value = apt.title;
+            document.getElementById('apt-description').value = apt.description || '';
+            document.getElementById('apt-address').value = apt.address;
+            document.getElementById('apt-city').value = apt.city;
+            document.getElementById('apt-price').value = apt.price_per_night;
+            document.getElementById('apt-guests').value = apt.guests;
+            document.getElementById('apt-bedrooms').value = apt.bedrooms;
+            document.getElementById('apt-beds').value = apt.beds;
+            document.getElementById('apt-bathrooms').value = apt.bathrooms;
+            document.getElementById('apt-amenities').value = apt.amenities.join(', ');
+            document.getElementById('apt-status').value = apt.is_available;
+            if (apt.latitude) document.getElementById('apt-lat').value = apt.latitude;
+            if (apt.longitude) document.getElementById('apt-lng').value = apt.longitude;
+
+            document.getElementById('form-error').classList.add('hidden');
+            document.getElementById('apartment-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('apartment-modal').classList.remove('active');
+            currentEditId = null;
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = {
+                ...Object.fromEntries(formData),
+                amenities: formData.get('amenities').split(',').map(a => a.trim()).filter(Boolean),
+                is_available: parseInt(formData.get('is_available'))
+            };
+
+            const method = currentEditId ? 'PUT' : 'POST';
+            const url = currentEditId ? `api/apartments.php/${currentEditId}` : 'api/apartments.php';
+
+            const errorEl = document.getElementById('form-error');
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    closeModal();
+                    await loadApartments();
+                    await loadAnalytics();
+                } else {
+                    errorEl.textContent = result.error || 'Operation failed';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorEl.textContent = 'Server error';
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function deleteApartment(id, type) {
+            deleteType = type;
+            deleteTarget = id;
+            document.getElementById('confirm-modal').classList.add('active');
+            document.getElementById('confirm-delete-btn').onclick = async function() {
+                try {
+                    const response = await fetch(`api/apartments.php/${id}`, { method: 'DELETE' });
+                    const result = await response.json();
+                    if (result.success) {
+                        closeConfirmModal();
+                        await loadApartments();
+                        await loadAnalytics();
+                    } else {
+                        alert(result.error || 'Failed to delete');
+                    }
+                } catch {
+                    alert('Server error');
+                }
+            };
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('active');
+            deleteTarget = null;
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        };
+    </script>
+</body>
+</html>
