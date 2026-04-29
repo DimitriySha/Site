@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartment Details - Uyut</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="index.html">Uyut<span>.</span></a>
+                </div>
+                <nav id="main-nav"></nav>
+                <div class="header-actions" id="header-actions"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="loading-state" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Loading apartment details...
+        </div>
+
+        <div id="apartment-container" class="apartment-detail" style="display: none;">
+            <!-- Gallery -->
+            <div class="apartment-gallery">
+                <img id="main-image" class="main-image" src="" alt="Apartment main photo">
+                <div class="thumbnails" id="thumbnails"></div>
+
+                <!-- Map -->
+                <div class="map-container">
+                    <iframe id="map-frame" src="" allowfullscreen loading="lazy"></iframe>
+                </div>
+            </div>
+
+            <!-- Info & Booking -->
+            <div>
+                <div class="apartment-info">
+                    <h1 id="apartment-title"></h1>
+                    <p class="location" style="margin-bottom: 15px;">
+                        <i class="fas fa-map-marker-alt"></i> <span id="apartment-address"></span>
+                    </p>
+                    <div class="apartment-price">₸<span id="apartment-price"></span><span>/night</span></div>
+
+                    <div class="apartment-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-bed"></i> <span id="apartment-bedrooms"></span> bedrooms
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-bed"></i> <span id="apartment-beds"></span> beds
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-bath"></i> <span id="apartment-bathrooms"></span> bathrooms
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-users"></i> Up to <span id="apartment-guests"></span> guests
+                        </div>
+                    </div>
+
+                    <div class="apartment-description" id="apartment-description"></div>
+
+                    <div class="features-list" id="amenities-list"></div>
+
+                    <!-- Booking Form -->
+                    <div class="booking-section" id="booking-section">
+                        <h3 style="margin-bottom: 15px;">Book This Apartment</h3>
+                        <div id="booking-error" class="error-message hidden"></div>
+                        <form id="booking-form">
+                            <div class="form-group">
+                                <label>Check-in Date</label>
+                                <input type="date" name="check_in" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Check-out Date</label>
+                                <input type="date" name="check_out" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Guests</label>
+                                <input type="number" name="guests" min="1" max="10" value="2" required>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-block">Request Booking</button>
+                        </form>
+                    </div>
+
+                    <div id="not-available" class="error-message hidden">
+                        This apartment is not available for selected dates or has been removed.
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex-between mt-20" id="action-buttons">
+                        <button class="btn btn-secondary" id="add-favorite-btn">
+                            <i class="far fa-heart"></i> Save to Favorites
+                        </button>
+                        <a href="messages.html?apartment=<span id="apt-id"></span>" class="btn btn-secondary">
+                            <i class="far fa-envelope"></i> Contact Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-bottom text-center">
+                <p>&copy; 2026 Uyut Rental Agency. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        const apartmentId = new URLSearchParams(window.location.search).get('id');
+        let currentApartment = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            initializeAuth();
+
+            // Set min dates
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelector('[name="check_in"]').min = today;
+            document.querySelector('[name="check_out"]').min = today;
+
+            if (!apartmentId) {
+                showNotFound();
+                return;
+            }
+
+            try {
+                const response = await fetch(`api/apartments.php/${apartmentId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    currentApartment = data.apartment;
+                    renderApartment(data.apartment);
+                } else {
+                    showNotFound();
+                }
+            } catch (error) {
+                showNotFound();
+            }
+        });
+
+        function renderApartment(apt) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('apartment-container').style.display = 'grid';
+
+            // Basic info
+            document.getElementById('apt-id').textContent = apt.id;
+            document.getElementById('apartment-title').textContent = apt.title;
+            document.getElementById('apartment-address').textContent = apt.address;
+            document.getElementById('apartment-price').textContent = Number(apt.price_per_night).toLocaleString();
+            document.getElementById('apartment-bedrooms').textContent = apt.bedrooms;
+            document.getElementById('apartment-beds').textContent = apt.beds;
+            document.getElementById('apartment-bathrooms').textContent = apt.bathrooms;
+            document.getElementById('apartment-guests').textContent = apt.guests;
+            document.getElementById('apartment-description').textContent = apt.description;
+
+            // Images
+            const mainImage = document.getElementById('main-image');
+            mainImage.src = apt.images.length ? `images/apartments/${apt.images[0]}` : 'images/placeholder.jpg';
+
+            const thumbnails = document.getElementById('thumbnails');
+            thumbnails.innerHTML = apt.images.map((img, i) => `
+                <img src="images/apartments/${img}"
+                     class="thumbnail ${i === 0 ? 'active' : ''}"
+                     onclick="changeImage('${img}', this)"
+                     alt="Thumbnail ${i+1}">
+            `).join('');
+
+            // Amenities
+            const amenitiesList = document.getElementById('amenities-list');
+            const amenityIcons = {
+                'wifi': 'wifi',
+                'kitchen': 'utensils',
+                'parking': 'parking',
+                'ac': 'snowflake',
+                'tv': 'tv',
+                'washer': 'soap',
+                'gym': 'dumbbell',
+                'pool': 'water'
+            };
+
+            amenitiesList.innerHTML = apt.amenities.map(am => `
+                <span class="feature-tag">
+                    <i class="fas fa-${amenityIcons[am] || 'check'}"></i> ${am.charAt(0).toUpperCase() + am.slice(1)}
+                </span>
+            `).join('');
+
+            // Map (Astana centered)
+            const mapFrame = document.getElementById('map-frame');
+            mapFrame.src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5481.${apt.longitude}${apt.latitude}!2d71.${apt.longitude}!3d51.${apt.latitude}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNTHCsDM0JzIwLjAiTiA3wrAzNCcyMy4wIlc!5e0!3m2!1sen!2skz!4v1234567890`;
+
+            // Update availability
+            if (apt.available) {
+                document.getElementById('booking-section').classList.remove('hidden');
+                document.getElementById('not-available').classList.add('hidden');
+            } else {
+                document.getElementById('booking-section').classList.add('hidden');
+                document.getElementById('not-available').classList.remove('hidden');
+            }
+
+            // Check if already in favorites
+            checkFavoriteStatus(apt.id);
+
+            // Set up event listeners
+            setupEventListeners();
+        }
+
+        function changeImage(src, element) {
+            document.getElementById('main-image').src = `images/apartments/${src}`;
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        async function checkFavoriteStatus(aptId) {
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user) {
+                document.getElementById('add-favorite-btn').style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch('api/favorites.php');
+                const data = await response.json();
+                if (data.success) {
+                    const isFav = data.favorites.some(f => f.apartment_id == aptId);
+                    const btn = document.getElementById('add-favorite-btn');
+                    if (isFav) {
+                        btn.innerHTML = '<i class="fas fa-heart"></i> Remove from Favorites';
+                        btn.classList.add('btn-danger');
+                        btn.classList.remove('btn-secondary');
+                    }
+                }
+            } catch { }
+        }
+
+        function setupEventListeners() {
+            // Favorite button
+            document.getElementById('add-favorite-btn').addEventListener('click', async function() {
+                const user = JSON.parse(localStorage.getItem('user') || 'null');
+                if (!user) {
+                    localStorage.setItem('after_login', window.location.href);
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const aptId = currentApartment.id;
+                const isFav = this.innerHTML.includes('Remove');
+
+                try {
+                    const url = isFav ? 'api/favorites.php' : 'api/favorites.php';
+                    const method = isFav ? 'DELETE' : 'POST';
+                    const body = isFav ? JSON.stringify({ apartment_id: aptId }) : JSON.stringify({ apartment_id: aptId, action: 'add' });
+
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: body
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        checkFavoriteStatus(aptId);
+                    } else {
+                        alert(result.error || 'Action failed');
+                    }
+                } catch (error) {
+                    alert('Error connecting to server');
+                }
+            });
+
+            // Booking form
+            document.getElementById('booking-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData);
+
+                const user = JSON.parse(localStorage.getItem('user') || 'null');
+                if (!user) {
+                    localStorage.setItem('after_login', window.location.href);
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const errorEl = document.getElementById('booking-error');
+                errorEl.classList.add('hidden');
+
+                try {
+                    const response = await fetch('api/bookings.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            apartment_id: apartmentId,
+                            check_in: data.check_in,
+                            check_out: data.check_out,
+                            guests: data.guests
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        alert(`Booking request submitted successfully!\nTotal nights: ${result.total_nights}\nTotal price: ₸${Number(result.total_price).toLocaleString()}`);
+
+                        // Optionally redirect to bookings page
+                        if (confirm('View your bookings?')) {
+                            window.location.href = 'bookings.html';
+                        } else {
+                            window.location.href = 'listings.html';
+                        }
+                    } else {
+                        errorEl.textContent = result.error || 'Booking failed';
+                        errorEl.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    errorEl.textContent = 'Server error. Please try again.';
+                    errorEl.classList.remove('hidden');
+                }
+            });
+        }
+
+        function showNotFound() {
+            document.getElementById('loading-state').innerHTML = `
+                <div class="empty-state">
+                    <h3>Apartment Not Found</h3>
+                    <p>The apartment you're looking for doesn't exist or has been removed.</p>
+                    <a href="listings.html" class="btn btn-primary">Browse All Apartments</a>
+                </div>
+            `;
+        }
+
+        // Re-check dates if already selected
+        const checkInInput = document.querySelector('[name="check_in"]');
+        const checkOutInput = document.querySelector('[name="check_out"]');
+        checkInInput.addEventListener('change', function() {
+            checkOutInput.min = this.value;
+            if (checkOutInput.value && checkOutInput.value <= this.value) {
+                checkOutInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>

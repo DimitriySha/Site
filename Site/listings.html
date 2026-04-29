@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartment Listings - Uyut</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="index.html">Uyut<span>.</span></a>
+                </div>
+                <nav id="main-nav"></nav>
+                <div class="header-actions" id="header-actions"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard">
+        <div class="container">
+            <!-- Filters -->
+            <div class="filters-section">
+                <form class="filters" id="filters-form">
+                    <div class="filter-group">
+                        <label>City</label>
+                        <select name="city">
+                            <option value="">All Cities</option>
+                            <option value="Astana" selected>Astana</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Guests</label>
+                        <select name="guests">
+                            <option value="">Any</option>
+                            <option value="1">1 Guest</option>
+                            <option value="2">2 Guests</option>
+                            <option value="3">3 Guests</option>
+                            <option value="4">4 Guests</option>
+                            <option value="5">5+ Guests</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Min Price (₸)</label>
+                        <input type="number" name="min_price" placeholder="Min">
+                    </div>
+                    <div class="filter-group">
+                        <label>Max Price (₸)</label>
+                        <input type="number" name="max_price" placeholder="Max">
+                    </div>
+                    <div class="sort-options">
+                        <label>Sort by:</label>
+                        <select name="sort">
+                            <option value="created_at">Newest</option>
+                            <option value="price_per_night">Price</option>
+                            <option value="title">Name</option>
+                            <option value="guests">Guests</option>
+                        </select>
+                        <select name="order">
+                            <option value="DESC">Descending</option>
+                            <option value="ASC">Ascending</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="apply-filters">Apply</button>
+                    <button type="button" class="btn btn-secondary" id="clear-filters">Clear</button>
+                </form>
+            </div>
+
+            <!-- Results -->
+            <div class="flex-between mb-20">
+                <h2 id="results-count">All Apartments</h2>
+            </div>
+
+            <div class="listings-grid" id="apartments-list">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading apartments...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Uyut</h3>
+                    <p style="color: #bdc3c7;">Your trusted partner for short-term apartment rentals in Astana.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="listings.html">Listings</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> +7 (700) 123-45-67</li>
+                        <li><i class="fas fa-envelope"></i> info@uyut.kz</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Uyut Rental Agency. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadApartments);
+        let allApartments = [];
+
+        async function loadApartments() {
+            const params = new URLSearchParams(window.location.search);
+            const filters = {};
+            for (const [key, value] of params) {
+                if (value) filters[key] = value;
+            }
+
+            try {
+                const queryString = Object.keys(filters).length ? '?' + new URLSearchParams(filters).toString() : '';
+                const response = await fetch('api/apartments.php' + queryString);
+                const data = await response.json();
+
+                allApartments = data.apartments || [];
+                displayApartments(allApartments);
+                updateCount(allApartments.length);
+
+                // Populate filter form from URL
+                for (const [key, value] of Object.entries(filters)) {
+                    const input = document.querySelector(`[name="${key}"]`);
+                    if (input) input.value = value;
+                }
+            } catch (error) {
+                console.error('Error loading apartments:', error);
+            }
+        }
+
+        function displayApartments(apartments) {
+            const container = document.getElementById('apartments-list');
+
+            if (apartments.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No apartments found</h3>
+                        <p>Try adjusting your search filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = apartments.map(apt => `
+                <div class="card apartment-card" data-id="${apt.id}">
+                    <div class="image-container">
+                        <img src="images/apartments/${apt.images[0] || 'placeholder.jpg'}" alt="${apt.title}">
+                        <div class="price-tag">₸${Number(apt.price_per_night).toLocaleString()}/night</div>
+                    </div>
+                    <div class="info">
+                        <h3>${apt.title}</h3>
+                        <p class="location"><i class="fas fa-map-marker-alt"></i> ${apt.address}, ${apt.city}</p>
+                        <div class="details">
+                            <span><i class="fas fa-bed"></i> ${apt.bedrooms} bed • ${apt.beds} beds</span>
+                            <span><i class="fas fa-bath"></i> ${apt.bathrooms} bath</span>
+                            <span><i class="fas fa-users"></i> Up to ${apt.guests} guests</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add click handler
+            container.querySelectorAll('.apartment-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    window.location.href = `apartment.html?id=${card.dataset.id}`;
+                });
+            });
+        }
+
+        function updateCount(count) {
+            document.getElementById('results-count').textContent = `${count} Apartment${count !== 1 ? 's' : ''} Found`;
+        }
+
+        // Filter functionality
+        document.getElementById('apply-filters').addEventListener('click', function() {
+            const formData = new FormData(document.getElementById('filters-form'));
+            const params = new URLSearchParams();
+            for (const [key, value] of formData) {
+                if (value) params.append(key, value);
+            }
+            window.location.href = 'listings.html?' + params.toString();
+        });
+
+        document.getElementById('clear-filters').addEventListener('click', function() {
+            document.getElementById('filters-form').reset();
+            window.location.href = 'listings.html';
+        });
+
+        // Initialize navigation
+        updateNavigation();
+    </script>
+</body>
+</html>
